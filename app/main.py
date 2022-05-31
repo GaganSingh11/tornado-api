@@ -43,6 +43,7 @@ def validate_json(body):
 
     if "test_number" not in req_data or "test_string" not in req_data:
         raise MissingKey("Missing Key")
+    return req_data
 
 # views
 class TestHandler(SessionMixin, RequestHandler):
@@ -59,21 +60,18 @@ class TestHandler(SessionMixin, RequestHandler):
         # payload validation
         if self.request.body:
             try:
-                json = validate_json(self.request.body)
+                req_data = validate_json(self.request.body)
             except InvalidJSON as e:
                 return str(e), 400
             except MissingKey as e:
                 return str(e), 400
             # connect and store in database
             with self.make_session() as session:
-                test_byt = self.request.body
-                test_dict = json.loads(test_byt.decode('utf-8'))
-                print(test_dict)
-                data = Test(**test_dict)
+                data = Test(**req_data)
                 session.add(data)
                 session.commit()
 
-            response = test_dict
+            response = {"test": req_data}
             self.write(response)
 
 
@@ -85,7 +83,7 @@ class SingleTestHandler(SessionMixin, RequestHandler):
                 data = session.query(Test).filter(Test.id == int(id)).first()
                 data = data.to_dict()
         
-        response = data
+        response = {"test": data}
         self.write(response)
                 
 
