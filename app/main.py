@@ -15,10 +15,18 @@ db = SQLAlchemy(url=database_url)
 class Test(db.Model):
     __tablename__ = "tests"
 
-    test_number = Column(Integer, nullable=False, primary_key=True)
+    id = Column(Integer, nullable=False, primary_key=True)
+    test_number = Column(Integer, nullable=False)
     test_string = Column(String(100), nullable=False)
-    test_boolen = Column(Boolean, nullable=True)
+    test_boolen = Column(Boolean, nullable=True, default=False)
     UniqueConstraint(test_string)
+
+    def to_dict(self):
+        return {
+                "test_number": self.test_number,
+                "test_string": self.test_string,
+                "test_boolen" :self.test_boolen
+        }
 
 db.create_all()
 
@@ -35,41 +43,36 @@ db_list = [
 class TestHandler(SessionMixin, RequestHandler):
     
     def get(self):
-
-        response = {"all posts": db_list}
+        with self.make_session() as session:
+            data = []
+            for test in session.query(Test):
+                data.append(test.to_dict())
+        response = {"tests": data}
         self.write(response)
 
     def post(self):
         if self.request.body:
             with self.make_session() as session:
-                count = session.query(Test).count()
-                print(count)
-            test_byt = self.request.body
-            test_dict = json.loads(test_byt.decode('utf-8'))
-            print(test_dict)
-            data = Test(**test_dict)
-            session.add(data)
-            session.commit()
+                test_byt = self.request.body
+                test_dict = json.loads(test_byt.decode('utf-8'))
+                print(test_dict)
+                data = Test(**test_dict)
+                session.add(data)
+                session.commit()
 
-            db_list.append(test_dict)
-
-            print(test_dict)
             response = test_dict
             self.write(response)
 
 
-class SingleTestHandler(RequestHandler):
+class SingleTestHandler(SessionMixin, RequestHandler):
 
     def get(self, id):
         if id:
-            print(type(id))
-            for item in db_list:
-                if item["test_number"] == int(id):
-                    result = item
-                else:
-                    result = "Test not found"
-        print(result)
-        response = result
+            with self.make_session() as session:
+                data = session.query(Test).filter(Test.id == int(id)).first()
+                data = data.to_dict()
+        
+        response = data
         self.write(response)
                 
 
