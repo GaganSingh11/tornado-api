@@ -5,11 +5,11 @@ from tornado_sqlalchemy import SQLAlchemy, SessionMixin
 from sqlalchemy import Column, Integer, String, Boolean, UniqueConstraint
 
 
-# database
+# Database url and instances
 database_url = "sqlite:///test.db"
 db = SQLAlchemy(url=database_url)
 
-# database model
+# Database model for tests table
 class Test(db.Model):
     __tablename__ = "tests"
 
@@ -29,7 +29,7 @@ class Test(db.Model):
 
 db.create_all()
 
-# validate payload/ checking of body paramters
+# Validate type of payload / checking of missing body paramters/ checking of wrong datatypes
 class InvalidJSON(Exception):
     pass
 
@@ -48,12 +48,15 @@ def validate_json(body):
     if "test_number" not in req_data or "test_string" not in req_data:
         raise MissingKey("Missing required field")
     
-    if isinstance(req_data["test_number"], int) and isinstance(req_data["test_string"], str):
+    if not isinstance(req_data["test_number"], int):
+        raise IncorrectData("Wrong data type received")
+    
+    if not isinstance(req_data["test_string"], str):
         raise IncorrectData("Wrong data type received")
 
     return req_data
 
-# views
+# Handlers for get tests, post tests, get single test
 class TestHandler(SessionMixin, RequestHandler):
     
     def get(self):
@@ -65,18 +68,18 @@ class TestHandler(SessionMixin, RequestHandler):
         self.write(response)
 
     def post(self):
-        # payload validation
+        # Validation of request payload
         if self.request.body:
             try:
                 req_data = validate_json(self.request.body)
-                # validate_json(req_data)
-                # prining payload in the console
+                
+                # Printing request payload in the console
                 print(req_data)
             except (InvalidJSON, MissingKey, IncorrectData) as e:
                 self.set_status(400)
                 self.write(str(e))
                 return
-            # connect and store in database
+            # Connect to database and store the payload in database
             with self.make_session() as session:
                 data = Test(**req_data)
                 session.add(data)
@@ -99,7 +102,7 @@ class SingleTestHandler(SessionMixin, RequestHandler):
                 
 
 
-# server
+# Server configuration and url patterns
 def make_app():
     return Application(
         [
@@ -112,7 +115,7 @@ def make_app():
     )
 
 
-
+# Create and runserver
 if __name__ == "__main__":
     app = make_app()
     port = 8888
