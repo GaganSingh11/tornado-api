@@ -61,10 +61,13 @@ class TestHandler(SessionMixin, RequestHandler):
         if self.request.body:
             try:
                 req_data = validate_json(self.request.body)
-            except InvalidJSON as e:
-                return str(e), 400
-            except MissingKey as e:
-                return str(e), 400
+                # validate_json(req_data)
+                # prining payload in the console
+                print(req_data)
+            except InvalidJSON | MissingKey as e:
+                self.set_status(400)
+                self.write(str(e))
+                return
             # connect and store in database
             with self.make_session() as session:
                 data = Test(**req_data)

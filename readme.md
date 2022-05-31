@@ -33,7 +33,7 @@ $ source venv/bin/activate
 > Now, install requirements using pip
 
 ```
-(env)$ pip install -r requirements.txt
+(venv)$ pip install -r requirements.txt
 ```
 > Once everything setup to check if the project is setup correctly by running the server
 ```
