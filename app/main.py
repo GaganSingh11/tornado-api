@@ -95,7 +95,11 @@ class SingleTestHandler(SessionMixin, RequestHandler):
         if id:
             with self.make_session() as session:
                 data = session.query(Test).filter(Test.id == int(id)).first()
-                data = data.to_dict()
+                if data == None:
+                    self.set_status(400)
+                    data = "Test not found"
+                else:
+                    data = data.to_dict()
         
         response = {"test": data}
         self.write(response)
