@@ -46,6 +46,10 @@ class TestHandler(SessionMixin, RequestHandler):
                 print(count)
             test_byt = self.request.body
             test_dict = json.loads(test_byt.decode('utf-8'))
+            print(test_dict)
+            data = Test(**test_dict)
+            session.add(data)
+            session.commit()
 
             db_list.append(test_dict)
 
