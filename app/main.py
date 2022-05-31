@@ -1,10 +1,27 @@
-from urllib import request
 from tornado.web import Application, RequestHandler
 import tornado.ioloop
 import json
+from tornado_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine
+from sqlalchemy import Column, Integer, String, Boolean, UniqueConstraint
+
 
 # database
-db = [
+database_url = "sqlite:///test.db"
+db = SQLAlchemy(url=database_url)
+engine = create_engine(database_url)
+
+# database model
+class Test(db.Model):
+    __tablename__ = "tests"
+
+    test_number = Column(Integer, nullable=False, primary_key=True)
+    test_string = Column(String, nullable=False)
+    test_boolen = Column(Boolean, nullable=True)
+    UniqueConstraint(test_string)
+
+
+db_list = [
     {
         "test_number": 1,
         "test_string": "first test added",
@@ -14,30 +31,37 @@ db = [
 
 # views
 class TestHandler(RequestHandler):
+    
     def get(self):
-        self.write({"message" : db})
+
+        response = {"all posts": db_list}
+        self.write(response)
 
     def post(self):
         if self.request.body:
             test_byt = self.request.body
             test_dict = json.loads(test_byt.decode('utf-8'))
 
-            db.append(test_dict)
+            db_list.append(test_dict)
 
             print(test_dict)
-            self.write({"message": test_dict})
+            response = test_dict
+            self.write(response)
+
 
 class SingleTestHandler(RequestHandler):
+
     def get(self, id):
         if id:
             print(type(id))
-            for item in db:
+            for item in db_list:
                 if item["test_number"] == int(id):
                     result = item
                 else:
                     result = "Test not found"
         print(result)
-        self.write({"message": result})
+        response = result
+        self.write(response)
                 
 
 
@@ -49,7 +73,8 @@ def make_app():
             (r"/tests/([^/]+)?", SingleTestHandler)
         ],
         debug = True,
-        autoreload = True
+        autoreload = True,
+        db = SQLAlchemy(database_url, binds=engine)
     )
 
 
