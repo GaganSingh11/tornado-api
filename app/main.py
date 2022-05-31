@@ -1,7 +1,7 @@
 from tornado.web import Application, RequestHandler
 import tornado.ioloop
 import json
-from tornado_sqlalchemy import SQLAlchemy
+from tornado_sqlalchemy import SQLAlchemy, SessionMixin
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Boolean, UniqueConstraint
 
@@ -9,16 +9,18 @@ from sqlalchemy import Column, Integer, String, Boolean, UniqueConstraint
 # database
 database_url = "sqlite:///test.db"
 db = SQLAlchemy(url=database_url)
-engine = create_engine(database_url)
+# engine = create_engine(database_url)
 
 # database model
 class Test(db.Model):
     __tablename__ = "tests"
 
     test_number = Column(Integer, nullable=False, primary_key=True)
-    test_string = Column(String, nullable=False)
+    test_string = Column(String(100), nullable=False)
     test_boolen = Column(Boolean, nullable=True)
     UniqueConstraint(test_string)
+
+db.create_all()
 
 
 db_list = [
@@ -30,7 +32,7 @@ db_list = [
 ]
 
 # views
-class TestHandler(RequestHandler):
+class TestHandler(SessionMixin, RequestHandler):
     
     def get(self):
 
@@ -39,6 +41,9 @@ class TestHandler(RequestHandler):
 
     def post(self):
         if self.request.body:
+            with self.make_session() as session:
+                count = session.query(Test).count()
+                print(count)
             test_byt = self.request.body
             test_dict = json.loads(test_byt.decode('utf-8'))
 
@@ -74,7 +79,7 @@ def make_app():
         ],
         debug = True,
         autoreload = True,
-        db = SQLAlchemy(database_url, binds=engine)
+        db = SQLAlchemy(database_url)
     )
 
 
