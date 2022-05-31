@@ -21,6 +21,7 @@ class Test(db.Model):
 
     def to_dict(self):
         return {
+                "id": self.id,
                 "test_number": self.test_number,
                 "test_string": self.test_string,
                 "test_boolen" :self.test_boolen
@@ -35,14 +36,21 @@ class InvalidJSON(Exception):
 class MissingKey(Exception):
     pass 
 
+class IncorrectData(Exception):
+    pass 
+
 def validate_json(body):
     try:
         req_data = json.loads(body.decode())
     except Exception as e:
-        raise InvalidJSON("Could not parse payload")
+        raise InvalidJSON("Could not parse payload please send a correct format")
 
     if "test_number" not in req_data or "test_string" not in req_data:
-        raise MissingKey("Missing Key")
+        raise MissingKey("Missing required field")
+    
+    if isinstance(req_data["test_number"], int) and isinstance(req_data["test_string"], str):
+        raise IncorrectData("Wrong data type received")
+
     return req_data
 
 # views
@@ -64,7 +72,7 @@ class TestHandler(SessionMixin, RequestHandler):
                 # validate_json(req_data)
                 # prining payload in the console
                 print(req_data)
-            except InvalidJSON | MissingKey as e:
+            except (InvalidJSON, MissingKey, IncorrectData) as e:
                 self.set_status(400)
                 self.write(str(e))
                 return
