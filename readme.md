@@ -50,17 +50,20 @@ $ source venv/bin/activate
         ```json
         {
         "tests": [
-            {
+            {   
+                "id": 1,
                 "test_number": 19,
                 "test_string": "boolen fixed",
                 "test_boolen": false
             },
             {
+                "id": 2,
                 "test_number": 1,
                 "test_string": "First test",
                 "test_boolen": false
             },
             {
+                "id": 3,
                 "test_number": 400,
                 "test_string": "third test",
                 "test_boolen": false
@@ -91,6 +94,7 @@ $ source venv/bin/activate
         ```json
         {
         "test": {
+            "id": 3,
             "test_number": 400,
             "test_string": "third test",
             "test_boolen": false
