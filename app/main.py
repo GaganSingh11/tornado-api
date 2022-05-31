@@ -2,14 +2,12 @@ from tornado.web import Application, RequestHandler
 import tornado.ioloop
 import json
 from tornado_sqlalchemy import SQLAlchemy, SessionMixin
-from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Boolean, UniqueConstraint
 
 
 # database
 database_url = "sqlite:///test.db"
 db = SQLAlchemy(url=database_url)
-# engine = create_engine(database_url)
 
 # database model
 class Test(db.Model):
@@ -30,14 +28,21 @@ class Test(db.Model):
 
 db.create_all()
 
+# validate payload/ checking of body paramters
+class InvalidJSON(Exception):
+    pass
 
-db_list = [
-    {
-        "test_number": 1,
-        "test_string": "first test added",
-        "test_boolen": False
-    }
-]
+class MissingKey(Exception):
+    pass 
+
+def validate_json(body):
+    try:
+        req_data = json.loads(body.decode())
+    except Exception as e:
+        raise InvalidJSON("Could not parse payload")
+
+    if "test_number" not in req_data or "test_string" not in req_data:
+        raise MissingKey("Missing Key")
 
 # views
 class TestHandler(SessionMixin, RequestHandler):
@@ -51,7 +56,15 @@ class TestHandler(SessionMixin, RequestHandler):
         self.write(response)
 
     def post(self):
+        # payload validation
         if self.request.body:
+            try:
+                json = validate_json(self.request.body)
+            except InvalidJSON as e:
+                return str(e), 400
+            except MissingKey as e:
+                return str(e), 400
+            # connect and store in database
             with self.make_session() as session:
                 test_byt = self.request.body
                 test_dict = json.loads(test_byt.decode('utf-8'))
